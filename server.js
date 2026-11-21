@@ -16,7 +16,7 @@ if (fs.existsSync(envFile)) {
   }
 }
 
-const PORT = Number(process.env.PORT || 3000);
+const PORT = Number(process.env.PORT || 6688);
 const TOKEN = process.env.ADMIN_API_KEY || '';
 const DATA_FILE = process.env.DATA_FILE || path.join(__dirname, 'data', 'items.json');
 const WEB_ROOT = path.join(__dirname, 'public');
@@ -83,8 +83,13 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   if (req.method === 'GET' && url.pathname === '/api/health') return send(res, 200, { ok: true });
   if (req.method === 'GET' && url.pathname === '/api/items') {
-    const items = readItems().sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
-    return send(res, 200, { items: items.map(safeItem) }, { 'cache-control': 'public, max-age=30' });
+    const q = (url.searchParams.get('q') || '').trim().toLocaleLowerCase();
+    const all = readItems().sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+    const filtered = q ? all.filter(item => [item.title, item.summary, item.body, item.category].some(value => String(value || '').toLocaleLowerCase().includes(q))) : all;
+    const limit = Math.min(50, Math.max(1, Number.parseInt(url.searchParams.get('limit') || '20', 10) || 20));
+    const offset = Math.min(filtered.length, Math.max(0, Number.parseInt(url.searchParams.get('offset') || '0', 10) || 0));
+    const items = filtered.slice(offset, offset + limit).map(safeItem);
+    return send(res, 200, { items, total: filtered.length, offset, limit, hasMore: offset + items.length < filtered.length }, { 'cache-control': 'public, max-age=30' });
   }
   if (url.pathname.startsWith('/api/')) {
     if (!authorized(req)) return send(res, TOKEN ? 401 : 503, { error: TOKEN ? 'A valid API token is required.' : 'Publishing API is not configured yet.' });
