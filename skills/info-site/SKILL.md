@@ -80,18 +80,18 @@ POST 的示例结构（仅示范非机密字段）：
 
 ## 部署及访问注意
 
-当前项目部署在 Silly Development 的 Node.js 服务，站点代码、健康检查和公开读取接口曾经实测正常。当前源站此前通过 HTTP 地址 `http://217.154.36.84:6688` 访问。绑定到 Cloudflare 的 `wabicat.kdns.fr` 区域已存在，但 `info` 主机的 DNS/HTTPS 是否可用必须实时检查；历史资料显示它尚未配置成功。
+当前项目部署在 Silly Development 的 Node.js 服务。Cloudflare 已将代理主机 `info.wabicat.kdns.fr` 指向源站 `217.154.36.84`，并设置仅匹配该主机的 Origin Rule，将源站端口覆盖为 `6688`。从外部通过 `https://info.wabicat.kdns.fr/` 打开站点、并通过 `https://info.wabicat.kdns.fr/api/items` 读取公开内容，曾核验可用；这不代表写入 API 已单独验证。
 
-用户明确要求：不要使用 Cloudflare Tunnel（担心可能违反 Silly 的规则）。不得安装或启动 Tunnel。应先查阅 Silly 当前条款及其支持的自定义域名、HTTPS、反向代理/端口方式，再选取合规且无 Tunnel 的方案。Cloudflare 普通代理支持端口清单有限，不能仅凭“已代理”或 HTTPS 页面跳转就声称任意 6688 源站端口已变成 HTTPS；必须从外网真实访问目标域名的 HTTPS 页面及 API 并验证证书、状态和内容。
+当前 Cloudflare SSL/TLS 模式为 Flexible：访客到 Cloudflare 使用 HTTPS，但 Cloudflare 到源站仍是 HTTP，因此并非端到端加密，也不应称源站连接为 HTTPS。不得通过这条明文回源链路发送管理员密钥。此配置未使用 Cloudflare Tunnel；用户明确要求不用 Tunnel，不得安装或启动。
 
-未实际完成验证前，不得把 `https://info.wabicat.kdns.fr` 描述为可用，也不应将管理密钥发送给该地址。HTTP 管理写入只有在当前授权与凭据工具允许时才可进行；若安全注入被拒绝，暂停 API 写入并说明具体限制，不要反复要求用户提交密钥、验证码或连接链接。
+Cloudflare 当前会话仍处于登录状态，但保存成下次可复用的持久会话未确认成功，不能保证之后免验证；避免重复登录。管理写入只可使用实际受支持且安全的密钥传输路径，外部 HTTPS 页面可用本身不改变 Flexible 回源的安全限制。
 
 ## 已知状态（2026-11-21）
 
 - 深色主题及信息站已部署；健康与公开内容读取接口曾返回 200。
 - 管理员密钥已在 Silly 私有运行配置中设置；无密钥的写入曾返回 401，因此鉴权路径至少部分生效。
 - 列表里已存在一条“信息站的建设思路”，首页和 `GET /api/items` 均曾核验显示 1 条。该条目是通过 Silly 文件管理器写入 JSON 数据文件，而不是经 `POST /api/items` 写入；不要把它说成 API POST 已成功。
-- Wallet 阻止将管理员密钥注入纯 HTTP 页面；因此不能仅凭数据文件中已有内容说写入 API 已通过验证。后续应在真正可接受安全密钥的 HTTPS/获准服务端路径上验证一次创建、更新和删除流程，并检查访问控制。
+- Wallet 曾阻止将管理员密钥注入纯 HTTP 页面。虽然 Cloudflare 前端 HTTPS 已核验可用，当前 Flexible 模式的 Cloudflare 到源站仍为 HTTP，不能经该链路发送管理员密钥。写入 API 未在本次 Cloudflare 配置验证中单独复测；后续应在真正安全的密钥传输路径上验证创建、更新和删除流程，并检查访问控制。
 - 源码公开在 GitHub 的 `CanesMueu1900/wabicat-info-site` 仓库。更新仓库前检查不包含 `.env`、token、密码、一次性验证码或个人秘密；仅提交必要文件和文档。
 
 ## 发布内容的推荐模板
