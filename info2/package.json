@@ -1,0 +1,14 @@
+{
+  "name": "wabicat-info2-secure-candidate",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test",
+    "build": "npm test && node --check netlify/functions/api-core.mjs && node --check netlify/functions/api.mjs"
+  },
+  "dependencies": {
+    "@netlify/blobs": "11.1.9"
+  }
+}
